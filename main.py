@@ -96,14 +96,20 @@ while True:
     cv2.rectangle(img, (lane2_limits[0], lane2_limits[1]), (lane2_limits[2], lane2_limits[3]), (255, 0, 0), 2)
 
     # Dashboard Background
-    cv2.rectangle(img, (0, 0), (1280, 100), (0, 0, 0), -1)
+    h, w, c = img.shape # Get video dimensions
+    cv2.rectangle(img, (0, 0), (w, 100), (0, 0, 0), -1)
     
     if ambulance_detected:
         cv2.putText(img, f'!!! EMERGENCY OVERRIDE !!!', (50, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3)
     else:
-        # Display Stats
-        cv2.putText(img, f'LANE 1: {count_lane1} | Time: {t1}s', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-        cv2.putText(img, f'LANE 2: {count_lane2} | Time: {t2}s', (600, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        # LANE 1 STATS (Left Aligned)
+        cv2.putText(img, f'LANE 1: {count_lane1} | Time: {t1}s', (20, 60), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        
+        # LANE 2 STATS (Right Aligned - Fixed Position)
+        # We place it at 'Width - 550 pixels' to ensure it fits on screen
+        cv2.putText(img, f'LANE 2: {count_lane2} | Time: {t2}s', (w - 550, 60), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2))
 
     # --- 8. DATA LOGGING (New Feature) ---
     # We log only once every 5 seconds to avoid flooding the CSV file
