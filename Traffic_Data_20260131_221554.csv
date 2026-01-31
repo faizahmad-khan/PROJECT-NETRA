@@ -1,0 +1,12 @@
+Timestamp,Lane1_Count,Lane2_Count,Ambulance_Detected,Green_Time_L1,Green_Time_L2
+22:15:55,17,19,False,39,43
+22:15:55,16,18,False,37,41
+22:15:55,14,17,False,33,39
+22:15:55,14,17,False,33,39
+22:15:55,15,18,False,35,41
+22:15:55,16,16,False,37,37
+22:16:00,21,15,False,47,35
+22:16:00,17,16,False,39,37
+22:16:00,18,16,False,41,37
+22:16:00,17,14,False,39,33
+22:16:00,17,14,False,39,33
