@@ -8,7 +8,7 @@ Project NETRA addresses the critical issue of urban traffic congestion and delay
 
 ## 📸 Demo & Screenshots
 
-![NETRA System Demo](/Users/faizahmadkhan/Desktop/PROJECT-NETRA/screenshots)
+![NETRA System Demo](demo.png)
 
 *Above: The NETRA system in action - Real-time detection of multiple vehicles across two lanes. Lane 1 (Red bounding boxes) shows 11 vehicles with 27s green time, while Lane 2 (Blue bounding boxes) shows 14 vehicles with 33s green time. The system dynamically calculates signal timings based on traffic density.*
 
