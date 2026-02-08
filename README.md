@@ -123,11 +123,11 @@ The system logs traffic patterns every 5 seconds. This data can be used to gener
 
 ## 📝 License
 
-This project is open-source and available under the MIT License.
+This project is open-source and available under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
+Contributions, issues, and feature requests are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide to get started.
 
 ## 👨‍💻 Author
 
