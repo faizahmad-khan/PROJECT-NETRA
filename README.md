@@ -8,7 +8,7 @@ Project NETRA addresses the critical issue of urban traffic congestion and delay
 
 ## 📸 Demo & Screenshots
 
-![NETRA System Demo](demo.png)
+![NETRA System Demo](assets/demo.png)
 
 *Above: The NETRA system in action - Real-time detection of multiple vehicles across two lanes. Lane 1 (Red bounding boxes) shows 11 vehicles with 27s green time, while Lane 2 (Blue bounding boxes) shows 14 vehicles with 33s green time. The system dynamically calculates signal timings based on traffic density.*
 
@@ -40,6 +40,45 @@ Project NETRA addresses the critical issue of urban traffic congestion and delay
 
 ---
 
+## 📁 Project Structure
+
+```
+PROJECT-NETRA/
+├── main.py                          # Main traffic management application
+├── requirements.txt                 # Python dependencies
+├── README.md                        # Project documentation
+├── LICENSE                          # MIT License
+│
+├── src/                            # Source code modules
+│   ├── analytics.py                # Interactive analytics dashboard
+│   ├── analytics_report.py         # Headless analytics (no GUI)
+│   └── utils/                      # Utility scripts
+│       ├── check_brain.py          # Model verification tool
+│       └── mouse_finder.py         # Coordinate selection helper
+│
+├── models/                         # AI model weights
+│   ├── best.pt                     # Custom ambulance detection model
+│   └── yolov8m.pt                  # YOLOv8 traffic detection model
+│
+├── data/                           # Data storage
+│   └── traffic_logs/               # CSV traffic logs (auto-generated)
+│
+├── reports/                        # Generated analytics
+│   └── analytics_output/           # Visualizations & summaries
+│
+├── docs/                           # Documentation
+│   ├── ANALYTICS_GUIDE.md          # Analytics usage guide
+│   └── CONTRIBUTING.md             # Contribution guidelines
+│
+├── assets/                         # Project assets
+│   └── demo.png                    # Demo screenshot
+│
+└── videos/                         # Video files
+    └── traffic.mp4                 # Test video input
+```
+
+---
+
 ## ⚙️ Installation
 
 ### Clone the Repository
@@ -57,13 +96,13 @@ pip install ultralytics opencv-python
 
 ### Setup Models
 
-The system will automatically download `yolov8m.pt`.
-
-**Important**: Ensure your custom trained model `best.pt` is placed in the root directory.
+Place the model files in the `models/` directory:
+- `yolov8m.pt` - General traffic detection (will auto-download on first run)
+- `best.pt` - Your custom trained ambulance detection model
 
 ### Add Video Source
 
-Place your test video in a folder named `videos/` and rename it to `traffic.mp4` (or update the path in [main.py](main.py)).
+Place your test video in the `videos/` folder and rename it to `traffic.mp4` (or update the path in [main.py](main.py)).
 
 ---
 
@@ -86,7 +125,7 @@ The system will automatically generate a CSV file (e.g., `Traffic_Data_20260131.
 Run the comprehensive traffic analytics dashboard to visualize and analyze your collected data:
 
 ```bash
-python analytics.py
+python src/analytics_report.py
 ```
 
 **The analytics module provides:**
