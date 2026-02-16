@@ -9,12 +9,12 @@ from datetime import datetime
 cap = cv2.VideoCapture("videos/traffic.mp4") # Check your filename!
 
 print("Loading Intelligent Models...")
-model_traffic = YOLO('yolov8m.pt')  # The Generalist (Cars)
-model_ambulance = YOLO('best.pt')   # The Specialist (Ambulance)
+model_traffic = YOLO('models/yolov8m.pt')  # The Generalist (Cars)
+model_ambulance = YOLO('models/best.pt')   # The Specialist (Ambulance)
 print("Models Loaded!")
 
 # --- 2. SETUP DATA LOGGING ---
-file_name = f"Traffic_Data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+file_name = f"data/traffic_logs/Traffic_Data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
 # Write the Header Row (Column Names)
 with open(file_name, mode='w', newline='') as file:
