@@ -81,6 +81,29 @@ python main.py
 
 The system will automatically generate a CSV file (e.g., `Traffic_Data_20260131.csv`) in the project folder.
 
+### 📊 Analytics Dashboard (NEW!)
+
+Run the comprehensive traffic analytics dashboard to visualize and analyze your collected data:
+
+```bash
+python analytics.py
+```
+
+**The analytics module provides:**
+
+✅ **Traffic Pattern Graphs**: Visualize hourly and daily traffic trends  
+✅ **Peak Hour Identification**: Automatically detect high-traffic periods  
+✅ **Lane Utilization Comparison**: Analyze traffic distribution across lanes  
+✅ **Ambulance Frequency Analytics**: Track emergency vehicle patterns  
+✅ **Average Wait Time Calculations**: Calculate signal timing efficiency  
+✅ **Correlation Heatmaps**: Understand relationships between traffic variables  
+✅ **Automated Reports**: Generate PDF-ready summary reports  
+
+**Output Files Generated:**
+- `Traffic_Analysis_YYYYMMDD_HHMMSS.png` - 4-panel visualization dashboard
+- `Correlation_Heatmap_YYYYMMDD_HHMMSS.png` - Data correlation matrix
+- `Traffic_Summary_YYYYMMDD_HHMMSS.txt` - Text-based statistics report
+
 ---
 
 ## 🏗️ System Architecture
