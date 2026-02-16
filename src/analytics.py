@@ -19,7 +19,7 @@ plt.rcParams['figure.figsize'] = (14, 8)
 class TrafficAnalytics:
     """Main analytics engine for NETRA traffic data"""
     
-    def __init__(self, data_folder="."):
+    def __init__(self, data_folder="data/traffic_logs"):
         """Initialize analytics engine
         
         Args:
@@ -217,7 +217,7 @@ class TrafficAnalytics:
         plt.tight_layout()
         
         # Save figure
-        filename = f"Traffic_Analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        filename = f"reports/analytics_output/Traffic_Analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         plt.savefig(filename, dpi=300, bbox_inches='tight')
         print(f"\n📊 Visualization saved: {filename}")
         
@@ -239,7 +239,7 @@ class TrafficAnalytics:
         plt.title('Traffic Data Correlation Matrix', fontsize=14, fontweight='bold', pad=20)
         plt.tight_layout()
         
-        filename = f"Correlation_Heatmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        filename = f"reports/analytics_output/Correlation_Heatmap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         plt.savefig(filename, dpi=300, bbox_inches='tight')
         print(f"🔥 Heatmap saved: {filename}")
         
@@ -250,7 +250,7 @@ class TrafficAnalytics:
         if not self.stats:
             self.calculate_statistics()
         
-        filename = f"Traffic_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        filename = f"reports/analytics_output/Traffic_Summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
         
         with open(filename, 'w') as f:
             f.write("="*70 + "\n")
@@ -309,7 +309,7 @@ def main():
     """)
     
     # Initialize analytics
-    analyzer = TrafficAnalytics(data_folder=".")
+    analyzer = TrafficAnalytics(data_folder="data/traffic_logs")
     
     # Generate full report
     analyzer.generate_full_report()
