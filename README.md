@@ -91,7 +91,12 @@ cd Project-NETRA
 ### Install Dependencies
 
 ```bash
-pip install ultralytics opencv-python
+pip install -r requirements.txt
+```
+
+Or install individually:
+```bash
+pip install ultralytics opencv-python pandas matplotlib seaborn streamlit pillow
 ```
 
 ### Setup Models
@@ -120,7 +125,7 @@ python main.py
 
 The system will automatically generate a CSV file (e.g., `Traffic_Data_20260131.csv`) in the project folder.
 
-### 📊 Analytics Dashboard (NEW!)
+### 📊 Analytics Dashboard
 
 Run the comprehensive traffic analytics dashboard to visualize and analyze your collected data:
 
@@ -129,6 +134,63 @@ python src/analytics_report.py
 ```
 
 **The analytics module provides:**
+
+✅ **Traffic Pattern Graphs**: Visualize hourly and daily traffic trends  
+✅ **Peak Hour Identification**: Automatically detect high-traffic periods  
+✅ **Lane Utilization Comparison**: Analyze traffic distribution across lanes  
+✅ **Ambulance Frequency Analytics**: Track emergency vehicle patterns  
+✅ **Average Wait Time Calculations**: Calculate signal timing efficiency  
+✅ **Correlation Heatmaps**: Understand relationships between traffic variables  
+✅ **Automated Reports**: Generate PDF-ready summary reports  
+
+**Output Files Generated:**
+- `Traffic_Analysis_YYYYMMDD_HHMMSS.png` - 4-panel visualization dashboard
+- `Correlation_Heatmap_YYYYMMDD_HHMMSS.png` - Data correlation matrix
+- `Traffic_Summary_YYYYMMDD_HHMMSS.txt` - Text-based statistics report
+
+### 🌐 Web Dashboard (NEW!)
+
+**Launch the interactive web interface for real-time monitoring and analysis:**
+
+```bash
+streamlit run src/web_dashboard.py
+```
+
+Or use the quick launcher:
+```bash
+bash start_dashboard.sh
+```
+
+**Web Dashboard Features:**
+
+🏠 **Home Page**
+- Real-time KPIs and metrics
+- Lane utilization charts
+- Recent activity overview
+
+📊 **Analytics Page**
+- Interactive traffic trends
+- Correlation analysis
+- Detailed statistics
+- Historical reports
+
+🔍 **Data Explorer**
+- Filter and search traffic data
+- Export custom datasets
+- Interactive data tables
+
+⚙️ **System Info**
+- Project structure
+- Model status
+- Quick reference commands
+
+**Access:** Dashboard opens automatically at `http://localhost:8501`
+
+**Perfect for:**
+- Live demonstrations
+- Project presentations
+- Real-time monitoring
+- Interactive data exploration
 
 ✅ **Traffic Pattern Graphs**: Visualize hourly and daily traffic trends  
 ✅ **Peak Hour Identification**: Automatically detect high-traffic periods  
