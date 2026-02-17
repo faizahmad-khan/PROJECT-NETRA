@@ -6,6 +6,14 @@ Project NETRA addresses the critical issue of urban traffic congestion and delay
 
 ---
 
+## 🌐 Live Demo
+
+**🚀 Web Dashboard:** [https://project-netra-dr457xmtu7dhxvakejabwz.streamlit.app/](https://project-netra-dr457xmtu7dhxvakejabwz.streamlit.app/)
+
+Experience the interactive analytics dashboard with real-time traffic visualizations, data explorer, and comprehensive system insights!
+
+---
+
 ## 📸 Demo & Screenshots
 
 ![NETRA System Demo](assets/demo.png)
