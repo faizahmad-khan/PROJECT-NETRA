@@ -37,9 +37,15 @@ env/
 *~
 .DS_Store
 
+# Streamlit Secrets
+.streamlit/secrets.toml
+
 # Project Specific
 # Generated Traffic Data (comment out if you want to track data)
 data/traffic_logs/*.csv
+
+# Allow sample data for deployment
+!data/traffic_logs/Sample_Traffic_Data.csv
 
 # Generated Analytics Reports (comment out if you want to track reports)
 reports/analytics_output/*.png
