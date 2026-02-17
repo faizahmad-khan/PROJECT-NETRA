@@ -45,7 +45,7 @@ env/
 data/traffic_logs/*.csv
 
 # Allow sample data for deployment
-!data/traffic_logs/Sample_Traffic_Data.csv
+!data/traffic_logs/Traffic_Data_20260218_000000.csv
 
 # Generated Analytics Reports (comment out if you want to track reports)
 reports/analytics_output/*.png
