@@ -83,6 +83,12 @@ def load_traffic_data():
     
     data = pd.concat(dataframes, ignore_index=True)
     
+    # Backward compatibility: add tracking columns if missing (old CSV format)
+    for col, default in [('Lane1_Unique', 0), ('Lane2_Unique', 0),
+                         ('Avg_Speed_L1', 0.0), ('Avg_Speed_L2', 0.0)]:
+        if col not in data.columns:
+            data[col] = default
+    
     # Parse timestamps
     try:
         data['DateTime'] = pd.to_datetime(
@@ -138,6 +144,12 @@ def calculate_kpis(data):
     kpis['ambulance_count'] = data['Ambulance_Detected'].sum()
     kpis['avg_green_time_l1'] = data['Green_Time_L1'].mean()
     kpis['avg_green_time_l2'] = data['Green_Time_L2'].mean()
+    
+    # Tracking metrics
+    kpis['max_unique_l1'] = int(data['Lane1_Unique'].max())
+    kpis['max_unique_l2'] = int(data['Lane2_Unique'].max())
+    kpis['avg_speed_l1'] = data['Avg_Speed_L1'].mean()
+    kpis['avg_speed_l2'] = data['Avg_Speed_L2'].mean()
     
     # Calculate efficiency
     total_vehicles = data['Lane1_Count'].sum() + data['Lane2_Count'].sum()
@@ -213,6 +225,38 @@ def page_home():
             label="Avg Lane 2 Traffic",
             value=f"{kpis['avg_lane2']:.1f}",
             delta=f"{kpis['lane2_utilization']:.1f}% utilization"
+        )
+    
+    # Vehicle Tracking Stats
+    st.markdown("---")
+    st.subheader("🔍 Vehicle Tracking (ByteTrack)")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            label="Unique Vehicles (L1)",
+            value=kpis.get('max_unique_l1', 0),
+            delta="Session Max"
+        )
+    
+    with col2:
+        st.metric(
+            label="Unique Vehicles (L2)",
+            value=kpis.get('max_unique_l2', 0),
+            delta="Session Max"
+        )
+    
+    with col3:
+        st.metric(
+            label="Avg Speed L1",
+            value=f"{kpis.get('avg_speed_l1', 0):.1f} px/s"
+        )
+    
+    with col4:
+        st.metric(
+            label="Avg Speed L2",
+            value=f"{kpis.get('avg_speed_l2', 0):.1f} px/s"
         )
     
     # Lane comparison
@@ -319,6 +363,22 @@ def page_analytics():
         st.pyplot(fig)
         plt.close()
         
+        # Speed Trends (only if tracking data exists)
+        if data['Avg_Speed_L1'].sum() > 0 or data['Avg_Speed_L2'].sum() > 0:
+            st.subheader("Vehicle Speed Trends")
+            fig, ax = plt.subplots(figsize=(14, 6))
+            ax.plot(range(len(data)), data['Avg_Speed_L1'],
+                   label='Lane 1 Speed', color='red', alpha=0.7, linewidth=2)
+            ax.plot(range(len(data)), data['Avg_Speed_L2'],
+                   label='Lane 2 Speed', color='blue', alpha=0.7, linewidth=2)
+            ax.set_xlabel('Observation Number', fontsize=12)
+            ax.set_ylabel('Speed (px/s)', fontsize=12)
+            ax.set_title('Average Vehicle Speed Over Time', fontsize=14, fontweight='bold')
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+            st.pyplot(fig)
+            plt.close()
+        
         # Hourly pattern
         if 'Hour' in data.columns:
             st.subheader("Hourly Traffic Pattern")
@@ -380,6 +440,8 @@ def page_analytics():
             st.write(f"**Maximum Vehicles:** {kpis['max_lane1']}")
             st.write(f"**Average Green Time:** {kpis['avg_green_time_l1']:.1f}s")
             st.write(f"**Utilization:** {kpis['lane1_utilization']:.1f}%")
+            st.write(f"**Max Unique Vehicles:** {kpis.get('max_unique_l1', 'N/A')}")
+            st.write(f"**Average Speed:** {kpis.get('avg_speed_l1', 0):.1f} px/s")
         
         with col2:
             st.markdown("### 🚙 Lane 2 Metrics")
@@ -387,6 +449,8 @@ def page_analytics():
             st.write(f"**Maximum Vehicles:** {kpis['max_lane2']}")
             st.write(f"**Average Green Time:** {kpis['avg_green_time_l2']:.1f}s")
             st.write(f"**Utilization:** {kpis['lane2_utilization']:.1f}%")
+            st.write(f"**Max Unique Vehicles:** {kpis.get('max_unique_l2', 'N/A')}")
+            st.write(f"**Average Speed:** {kpis.get('avg_speed_l2', 0):.1f} px/s")
         
         st.markdown("---")
         st.markdown("### 🚑 Emergency Alerts")
@@ -458,9 +522,12 @@ def page_data_explorer():
     st.write(f"**Showing {len(filtered_data)} of {len(data)} records**")
     
     # Display filtered data
+    display_cols = ['Timestamp', 'Lane1_Count', 'Lane2_Count',
+                    'Lane1_Unique', 'Lane2_Unique',
+                    'Avg_Speed_L1', 'Avg_Speed_L2',
+                    'Ambulance_Detected', 'Green_Time_L1', 'Green_Time_L2']
     st.dataframe(
-        filtered_data[['Timestamp', 'Lane1_Count', 'Lane2_Count', 
-                      'Ambulance_Detected', 'Green_Time_L1', 'Green_Time_L2']],
+        filtered_data[display_cols],
         use_container_width=True
     )
     
@@ -558,10 +625,11 @@ PROJECT-NETRA/
     
     - 🧠 **YOLOv8** for vehicle detection
     - 🚑 **Custom model** for ambulance detection
+    - 🔍 **ByteTrack** for multi-object vehicle tracking
     - ⏱️ **Adaptive timing** based on traffic density
     - 📊 **Real-time analytics** for traffic insights
     
-    **Version:** 1.0  
+    **Version:** 2.0 (with Vehicle Tracking)  
     **Developer:** Faiz Ahmad Khan  
     **Institution:** 3rd Year Project
     """)
