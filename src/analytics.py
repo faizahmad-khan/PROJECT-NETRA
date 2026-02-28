@@ -59,6 +59,12 @@ class TrafficAnalytics:
         # Combine all data
         self.data = pd.concat(dataframes, ignore_index=True)
         
+        # Backward compatibility: add tracking columns if missing
+        for col, default in [('Lane1_Unique', 0), ('Lane2_Unique', 0),
+                             ('Avg_Speed_L1', 0.0), ('Avg_Speed_L2', 0.0)]:
+            if col not in self.data.columns:
+                self.data[col] = default
+        
         # Convert timestamp to datetime
         try:
             self.data['DateTime'] = pd.to_datetime(
@@ -111,6 +117,18 @@ class TrafficAnalytics:
         print(f"  • Ambulance Detections: {self.stats['ambulance_count']}")
         if self.stats['ambulance_count'] > 0:
             print(f"  • Emergency Override Rate: {(self.stats['ambulance_count']/self.stats['total_records']*100):.2f}%")
+        
+        # Tracking Statistics
+        if self.data['Lane1_Unique'].sum() > 0 or self.data['Lane2_Unique'].sum() > 0:
+            self.stats['max_unique_l1'] = self.data['Lane1_Unique'].max()
+            self.stats['max_unique_l2'] = self.data['Lane2_Unique'].max()
+            self.stats['avg_speed_l1'] = self.data['Avg_Speed_L1'].mean()
+            self.stats['avg_speed_l2'] = self.data['Avg_Speed_L2'].mean()
+            print(f"\n🔍 VEHICLE TRACKING (ByteTrack)")
+            print(f"  • Max Unique Vehicles (Lane 1): {self.stats['max_unique_l1']}")
+            print(f"  • Max Unique Vehicles (Lane 2): {self.stats['max_unique_l2']}")
+            print(f"  • Average Speed (Lane 1): {self.stats['avg_speed_l1']:.1f} px/s")
+            print(f"  • Average Speed (Lane 2): {self.stats['avg_speed_l2']:.1f} px/s")
         
         # Peak Hour Analysis
         if 'Hour' in self.data.columns:
@@ -230,8 +248,10 @@ class TrafficAnalytics:
         
         plt.figure(figsize=(10, 8))
         
-        # Select numeric columns
+        # Select numeric columns (include speed if tracking data exists)
         numeric_cols = ['Lane1_Count', 'Lane2_Count', 'Green_Time_L1', 'Green_Time_L2']
+        if self.data['Avg_Speed_L1'].sum() > 0 or self.data['Avg_Speed_L2'].sum() > 0:
+            numeric_cols.extend(['Avg_Speed_L1', 'Avg_Speed_L2'])
         corr_data = self.data[numeric_cols].corr()
         
         sns.heatmap(corr_data, annot=True, fmt='.3f', cmap='coolwarm', 
