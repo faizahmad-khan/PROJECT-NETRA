@@ -4,17 +4,93 @@ import supervision as sv
 import numpy as np
 import csv
 import time
+import argparse
+from typing import cast
 from datetime import datetime
 from src.tracker import VehicleTracker
+from src.model_runtime import (
+    RuntimeConfig,
+    build_predict_kwargs,
+    format_runtime_summary,
+    resolve_device,
+    resolve_precision,
+)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="NETRA main runtime with edge optimization options."
+    )
+    parser.add_argument(
+        "--video",
+        default="videos/traffic.mp4",
+        help="Path to input video",
+    )
+    parser.add_argument(
+        "--traffic-model",
+        default="models/yolov8m.pt",
+        help="Traffic detector model path (.pt/.onnx/.engine/.mlpackage)",
+    )
+    parser.add_argument(
+        "--ambulance-model",
+        default="models/best.pt",
+        help="Ambulance detector model path",
+    )
+    parser.add_argument(
+        "--device",
+        default="auto",
+        choices=["auto", "cpu", "mps", "cuda"],
+        help="Inference device",
+    )
+    parser.add_argument(
+        "--precision",
+        default="fp32",
+        choices=["fp32", "fp16"],
+        help="Inference precision (fp16 enabled only on CUDA)",
+    )
+    parser.add_argument(
+        "--imgsz",
+        type=int,
+        default=640,
+        help="Inference image size",
+    )
+    parser.add_argument(
+        "--skip-frames",
+        type=int,
+        default=0,
+        help="Skip N frames between processed frames to increase throughput",
+    )
+    return parser.parse_args()
+
 
 # --- 1. SETUP VIDEO & MODELS ---
-cap = cv2.VideoCapture("videos/traffic.mp4")  # Check your filename!
+args = parse_args()
+
+cap = cv2.VideoCapture(args.video)
 fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
 
+device = resolve_device(args.device)
+use_half = resolve_precision(args.precision, device)
+
+runtime_config = RuntimeConfig(
+    device=device,
+    use_half=use_half,
+    imgsz=args.imgsz,
+)
+
+predict_kwargs = build_predict_kwargs(runtime_config)
+
 print("Loading Intelligent Models...")
-model_traffic = YOLO('models/yolov8m.pt')    # The Generalist (Cars)
-model_ambulance = YOLO('models/best.pt')     # The Specialist (Ambulance)
+model_traffic = YOLO(args.traffic_model)    # The Generalist (Cars)
+model_ambulance = YOLO(args.ambulance_model)  # The Specialist (Ambulance)
 print("Models Loaded!")
+print(f"Runtime Optimized: {format_runtime_summary(runtime_config)}")
+
+if args.precision == "fp16" and not use_half:
+    print(
+        "FP16 requested but unsupported on this device. "
+        "Falling back to FP32."
+    )
 
 # --- 2. SETUP VEHICLE TRACKER (ByteTrack) ---
 tracker = VehicleTracker(frame_rate=fps)
@@ -26,10 +102,13 @@ vehicle_class_ids = [
 print(f"🔍 ByteTrack enabled @ {fps} FPS | Tracking: {VEHICLE_CLASSES}")
 
 # --- 3. SETUP DATA LOGGING ---
-file_name = f"data/traffic_logs/Traffic_Data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+file_name = (
+    "data/traffic_logs/Traffic_Data_"
+    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+)
 
 # Write the Header Row (Column Names — extended with tracking data)
-with open(file_name, mode='w', newline='') as file:
+with open(file_name, mode='w', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
     writer.writerow([
         "Timestamp", "Lane1_Count", "Lane2_Count",
@@ -44,24 +123,36 @@ print(f"✅ Logging data to: {file_name}")
 lane1_limits = [50, 100, 350, 500]   # Left Lane (Red Box)
 lane2_limits = [400, 100, 700, 500]  # Right Lane (Blue Box)
 
+frame_idx = 0
 while True:
     success, img = cap.read()
     if not success:
         # Loop video forever for demo — reset tracker on loop
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         tracker.reset()
+        frame_idx = 0
+        continue
+
+    frame_idx += 1
+    if args.skip_frames > 0 and (frame_idx % (args.skip_frames + 1)) != 1:
         continue
 
     ambulance_detected = False
 
     # --- 5. TRAFFIC DETECTION + TRACKING (Brain 1 + ByteTrack) ---
-    results = model_traffic(img, verbose=False)
-    detections = sv.Detections.from_ultralytics(results[0])
+    results = model_traffic(img, **predict_kwargs)
+    detections = cast(
+        sv.Detections,
+        sv.Detections.from_ultralytics(results[0]),
+    )
+
+    if detections.class_id is None or detections.confidence is None:
+        continue
 
     # Filter: keep only vehicle classes above confidence threshold
     mask = (np.isin(detections.class_id, vehicle_class_ids)
             & (detections.confidence > 0.15))
-    detections = detections[mask]
+    detections = cast(sv.Detections, detections[mask])
 
     # Track across frames (assigns persistent IDs)
     tracked = tracker.update(detections)
@@ -69,8 +160,12 @@ while True:
 
     count_lane1 = info["lane1_count"]
     count_lane2 = info["lane2_count"]
-    avg_speed_l1 = np.mean(info["lane1_speeds"]) if info["lane1_speeds"] else 0.0
-    avg_speed_l2 = np.mean(info["lane2_speeds"]) if info["lane2_speeds"] else 0.0
+    avg_speed_l1 = (
+        np.mean(info["lane1_speeds"]) if info["lane1_speeds"] else 0.0
+    )
+    avg_speed_l2 = (
+        np.mean(info["lane2_speeds"]) if info["lane2_speeds"] else 0.0
+    )
     uniq_l1, uniq_l2 = tracker.get_unique_counts()
 
     # Draw tracked vehicles with IDs and movement trails
@@ -103,7 +198,7 @@ while True:
             cv2.line(img, trail[j - 1], trail[j], color, thickness)
 
     # --- 6. AMBULANCE DETECTION (Brain 2) ---
-    results_amb = model_ambulance(img, verbose=False)
+    results_amb = model_ambulance(img, **predict_kwargs)
 
     for box in results_amb[0].boxes:
         cls = int(box.cls[0])
@@ -161,7 +256,7 @@ while True:
         timestamp = datetime.now().strftime('%H:%M:%S')
 
         # Open in APPEND mode ('a')
-        with open(file_name, mode='a', newline='') as file:
+        with open(file_name, mode='a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow([
                 timestamp, count_lane1, count_lane2,
@@ -185,7 +280,7 @@ cv2.destroyAllWindows()
 # Session Summary
 uniq_l1, uniq_l2 = tracker.get_unique_counts()
 print(f"\n{'='*50}")
-print(f"📊 SESSION SUMMARY")
+print("📊 SESSION SUMMARY")
 print(f"{'='*50}")
 print(f"  Unique Vehicles — Lane 1: {uniq_l1}  |  Lane 2: {uniq_l2}")
 print(f"  Total Unique: {uniq_l1 + uniq_l2}")
