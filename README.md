@@ -67,6 +67,8 @@ PROJECT-NETRA/
 │
 ├── src/                            # Source code modules
 │   ├── tracker.py                  # ByteTrack vehicle tracking module
+│   ├── model_runtime.py            # Device + precision runtime tuning helpers
+│   ├── export_model.py             # Export utility (ONNX/CoreML/TensorRT)
 │   ├── analytics.py                # Interactive analytics dashboard
 │   ├── analytics_report.py         # Headless analytics (no GUI)
 │   ├── web_dashboard.py            # Streamlit web dashboard
@@ -136,6 +138,49 @@ Run the main application:
 ```bash
 python main.py
 ```
+
+### Performance-Friendly Runtime (Recommended)
+
+```bash
+python main.py --traffic-model models/yolov8n.pt --device auto --precision fp32 --imgsz 640 --skip-frames 1
+```
+
+Useful runtime flags:
+- `--traffic-model`: choose a lighter model (`models/yolov8n.pt`) for edge devices.
+- `--device`: `auto`, `cpu`, `mps`, `cuda`.
+- `--precision`: `fp16` (CUDA only), otherwise auto-falls back to FP32.
+- `--imgsz`: reduce from 640 to 512/416 for more FPS.
+- `--skip-frames`: process every `(N+1)`th frame to improve throughput.
+
+### Model Export for Edge Deployment
+
+Export helper:
+
+```bash
+python src/export_model.py --model models/yolov8n.pt --format onnx --imgsz 640
+```
+
+MacBook M2 (Apple Silicon):
+
+```bash
+python src/export_model.py --model models/yolov8n.pt --format coreml --imgsz 640
+```
+
+Jetson / NVIDIA edge (TensorRT FP16):
+
+```bash
+python src/export_model.py --model models/yolov8n.pt --format engine --half --device cuda:0 --imgsz 640
+```
+
+Jetson / NVIDIA edge (TensorRT INT8):
+
+```bash
+python src/export_model.py --model models/yolov8n.pt --format engine --int8 --device cuda:0 --imgsz 640 --data coco8.yaml
+```
+
+Notes:
+- INT8 requires representative calibration data (`--data`) for stable accuracy.
+- If your platform does not support requested precision, the runtime keeps working with FP32.
 
 ### 🎮 Controls
 
