@@ -82,12 +82,49 @@ def load_traffic_data():
         dataframes.append(df)
     
     data = pd.concat(dataframes, ignore_index=True)
-    
-    # Backward compatibility: add tracking columns if missing (old CSV format)
-    for col, default in [('Lane1_Unique', 0), ('Lane2_Unique', 0),
-                         ('Avg_Speed_L1', 0.0), ('Avg_Speed_L2', 0.0)]:
+
+    # Backward compatibility + data hygiene for deployment datasets.
+    required_defaults = {
+        'Lane1_Count': 0,
+        'Lane2_Count': 0,
+        'Lane1_Unique': 0,
+        'Lane2_Unique': 0,
+        'Avg_Speed_L1': 0.0,
+        'Avg_Speed_L2': 0.0,
+        'Green_Time_L1': 0,
+        'Green_Time_L2': 0,
+        'Ambulance_Detected': 0,
+    }
+
+    for col, default in required_defaults.items():
         if col not in data.columns:
             data[col] = default
+
+    numeric_columns = [
+        'Lane1_Count',
+        'Lane2_Count',
+        'Lane1_Unique',
+        'Lane2_Unique',
+        'Avg_Speed_L1',
+        'Avg_Speed_L2',
+        'Green_Time_L1',
+        'Green_Time_L2',
+    ]
+    for col in numeric_columns:
+        data[col] = pd.to_numeric(data[col], errors='coerce').fillna(required_defaults[col])
+
+    # Normalize emergency flag to numeric 0/1 for robust aggregation.
+    ambulance_raw = data['Ambulance_Detected']
+    if ambulance_raw.dtype == bool:
+        data['Ambulance_Detected'] = ambulance_raw.astype(int)
+    else:
+        normalized = ambulance_raw.astype(str).str.strip().str.lower()
+        mapped = normalized.map({
+            '1': 1, 'true': 1, 'yes': 1, 'y': 1,
+            '0': 0, 'false': 0, 'no': 0, 'n': 0,
+        })
+        numeric_fallback = pd.to_numeric(ambulance_raw, errors='coerce')
+        data['Ambulance_Detected'] = mapped.fillna(numeric_fallback).fillna(0).astype(int)
     
     # Parse timestamps
     try:
@@ -131,11 +168,26 @@ def get_latest_reports():
 
 def calculate_kpis(data):
     """Calculate Key Performance Indicators"""
-    kpis = {}
-    
+    kpis = {
+        'total_observations': 0,
+        'avg_lane1': 0.0,
+        'avg_lane2': 0.0,
+        'max_lane1': 0,
+        'max_lane2': 0,
+        'ambulance_count': 0,
+        'avg_green_time_l1': 0.0,
+        'avg_green_time_l2': 0.0,
+        'max_unique_l1': 0,
+        'max_unique_l2': 0,
+        'avg_speed_l1': 0.0,
+        'avg_speed_l2': 0.0,
+        'lane1_utilization': 0.0,
+        'lane2_utilization': 0.0,
+    }
+
     if data is None or len(data) == 0:
         return kpis
-    
+
     kpis['total_observations'] = len(data)
     kpis['avg_lane1'] = data['Lane1_Count'].mean()
     kpis['avg_lane2'] = data['Lane2_Count'].mean()
@@ -152,19 +204,20 @@ def calculate_kpis(data):
     kpis['avg_speed_l2'] = data['Avg_Speed_L2'].mean()
     
     # Calculate efficiency
-    total_vehicles = data['Lane1_Count'].sum() + data['Lane2_Count'].sum()
+    total_vehicles = float(data['Lane1_Count'].sum() + data['Lane2_Count'].sum())
     if total_vehicles > 0:
         kpis['lane1_utilization'] = (data['Lane1_Count'].sum() / total_vehicles * 100)
         kpis['lane2_utilization'] = (data['Lane2_Count'].sum() / total_vehicles * 100)
     
     # Peak hour
-    if 'Hour' in data.columns:
+    if 'Hour' in data.columns and not data['Hour'].isna().all():
         hourly_traffic = data.groupby('Hour').agg({
             'Lane1_Count': 'mean',
             'Lane2_Count': 'mean'
         })
-        total_traffic = hourly_traffic['Lane1_Count'] + hourly_traffic['Lane2_Count']
-        kpis['peak_hour'] = total_traffic.idxmax()
+        if not hourly_traffic.empty:
+            total_traffic = hourly_traffic['Lane1_Count'] + hourly_traffic['Lane2_Count']
+            kpis['peak_hour'] = int(total_traffic.idxmax())
     
     return kpis
 
@@ -217,14 +270,14 @@ def page_home():
         st.metric(
             label="Avg Lane 1 Traffic",
             value=f"{kpis['avg_lane1']:.1f}",
-            delta=f"{kpis['lane1_utilization']:.1f}% utilization"
+            delta=f"{kpis.get('lane1_utilization', 0.0):.1f}% utilization"
         )
     
     with col4:
         st.metric(
             label="Avg Lane 2 Traffic",
             value=f"{kpis['avg_lane2']:.1f}",
-            delta=f"{kpis['lane2_utilization']:.1f}% utilization"
+            delta=f"{kpis.get('lane2_utilization', 0.0):.1f}% utilization"
         )
     
     # Vehicle Tracking Stats
@@ -317,7 +370,9 @@ def page_home():
     st.markdown("---")
     st.subheader("📋 Recent Activity")
     
-    recent_data = data.tail(10).sort_values('Timestamp', ascending=False)
+    recent_data = data.tail(10)
+    if 'Timestamp' in recent_data.columns:
+        recent_data = recent_data.sort_values('Timestamp', ascending=False)
     display_cols = ['Timestamp', 'Lane1_Count', 'Lane2_Count', 'Ambulance_Detected', 
                     'Green_Time_L1', 'Green_Time_L2']
     
@@ -439,7 +494,7 @@ def page_analytics():
             st.write(f"**Average Vehicles:** {kpis['avg_lane1']:.2f}")
             st.write(f"**Maximum Vehicles:** {kpis['max_lane1']}")
             st.write(f"**Average Green Time:** {kpis['avg_green_time_l1']:.1f}s")
-            st.write(f"**Utilization:** {kpis['lane1_utilization']:.1f}%")
+            st.write(f"**Utilization:** {kpis.get('lane1_utilization', 0.0):.1f}%")
             st.write(f"**Max Unique Vehicles:** {kpis.get('max_unique_l1', 'N/A')}")
             st.write(f"**Average Speed:** {kpis.get('avg_speed_l1', 0):.1f} px/s")
         
@@ -448,7 +503,7 @@ def page_analytics():
             st.write(f"**Average Vehicles:** {kpis['avg_lane2']:.2f}")
             st.write(f"**Maximum Vehicles:** {kpis['max_lane2']}")
             st.write(f"**Average Green Time:** {kpis['avg_green_time_l2']:.1f}s")
-            st.write(f"**Utilization:** {kpis['lane2_utilization']:.1f}%")
+            st.write(f"**Utilization:** {kpis.get('lane2_utilization', 0.0):.1f}%")
             st.write(f"**Max Unique Vehicles:** {kpis.get('max_unique_l2', 'N/A')}")
             st.write(f"**Average Speed:** {kpis.get('avg_speed_l2', 0):.1f} px/s")
         

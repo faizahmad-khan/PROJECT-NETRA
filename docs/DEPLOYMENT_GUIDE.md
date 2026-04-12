@@ -239,7 +239,7 @@ git push
 
 **Solution:** Add to `packages.txt` (already done!)
 ```
-libgl1-mesa-glx
+libgl1
 libglib2.0-0
 ```
 
