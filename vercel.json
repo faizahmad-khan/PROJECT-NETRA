@@ -1,10 +1,11 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
+  "redirects": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "https://project-netra-dr457xmtu7dhxvakejabwz.streamlit.app/",
+      "permanent": false
     }
   ]
 }
