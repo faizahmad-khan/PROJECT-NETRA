@@ -22,6 +22,35 @@ This guide will help you deploy your NETRA traffic management dashboard online.
 | **Railway** | ✅ Limited | ⭐⭐⭐⭐ | Quick deployment |
 | **Heroku** | ❌ Paid only | ⭐⭐⭐ | Production apps |
 
+### Vercel Note (Why You See 404)
+
+If you deploy this repository directly to Vercel without an entry route,
+Vercel returns:
+
+```text
+Failed to load resource: the server responded with a status of 404
+```
+
+This project's dashboard is built with Streamlit, which is not a native
+long-running runtime on Vercel. To avoid 404 on your Vercel URL, this repo now
+includes:
+
+- `index.html` as a landing page
+- `vercel.json` rewrite rules so all routes resolve to `index.html`
+
+Result: your Vercel deployment always serves a valid page and links to the live
+Streamlit dashboard.
+
+### Quick Vercel Redeploy Steps
+
+```bash
+git add vercel.json index.html docs/DEPLOYMENT_GUIDE.md
+git commit -m "Fix Vercel 404 with static entry route"
+git push
+```
+
+Then trigger a new deploy in Vercel (or wait for auto-deploy).
+
 ---
 
 ## ✅ Option 1: Streamlit Cloud (Recommended)

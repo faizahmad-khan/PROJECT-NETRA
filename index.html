@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project NETRA</title>
+    <meta
+      name="description"
+      content="Project NETRA traffic intelligence dashboard entry page"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Sora:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-1: #f4fbff;
+        --bg-2: #e8fff7;
+        --ink: #10222d;
+        --ink-soft: #315062;
+        --card: rgba(255, 255, 255, 0.82);
+        --line: rgba(16, 34, 45, 0.1);
+        --accent: #008e7f;
+        --accent-2: #ff7a1a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Manrope, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 20%, rgba(0, 142, 127, 0.2), transparent 45%),
+          radial-gradient(circle at 90% 0%, rgba(255, 122, 26, 0.2), transparent 40%),
+          linear-gradient(135deg, var(--bg-1), var(--bg-2));
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .card {
+        width: min(760px, 100%);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 18px 60px rgba(16, 34, 45, 0.12);
+        padding: 28px;
+      }
+
+      .eyebrow {
+        font-size: 13px;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: var(--accent);
+        margin: 0 0 8px;
+      }
+
+      h1 {
+        font-family: Sora, Manrope, sans-serif;
+        font-size: clamp(30px, 4vw, 44px);
+        line-height: 1.08;
+        margin: 0 0 10px;
+      }
+
+      p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .cta-row {
+        margin-top: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .btn {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 18px;
+        border-radius: 12px;
+        font-weight: 800;
+        border: 1px solid transparent;
+        transition: transform 160ms ease, box-shadow 160ms ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        background: linear-gradient(90deg, var(--accent), #0bb39a);
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(0, 142, 127, 0.28);
+      }
+
+      .btn-secondary {
+        background: #fff;
+        color: var(--ink);
+        border-color: var(--line);
+      }
+
+      .note {
+        margin-top: 22px;
+        padding: 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 122, 26, 0.26);
+        background: rgba(255, 122, 26, 0.09);
+        color: #73390f;
+        font-size: 14px;
+      }
+
+      @media (max-width: 640px) {
+        .card {
+          padding: 20px;
+          border-radius: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <p class="eyebrow">Project NETRA</p>
+      <h1>Traffic Dashboard Gateway</h1>
+      <p>
+        This Vercel deployment serves as the entry page for NETRA. The full
+        Streamlit dashboard is available at the hosted app URL below.
+      </p>
+
+      <div class="cta-row">
+        <a
+          class="btn btn-primary"
+          href="https://project-netra-dr457xmtu7dhxvakejabwz.streamlit.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Open Live Dashboard</a
+        >
+        <a
+          class="btn btn-secondary"
+          href="https://github.com/faizahmad-khan/PROJECT-NETRA"
+          target="_blank"
+          rel="noopener noreferrer"
+          >View Repository</a
+        >
+      </div>
+
+      <div class="note">
+        Streamlit apps require a long-running application process. Vercel
+        serverless deployments are best used as a static landing page or API
+        layer for this project.
+      </div>
+    </main>
+  </body>
+</html>
