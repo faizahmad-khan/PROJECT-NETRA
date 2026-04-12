@@ -237,11 +237,13 @@ git push
 
 ### Error: "OpenCV error - libGL.so.1"
 
-**Solution:** Add to `packages.txt` (already done!)
-```
-libgl1
-libglib2.0-0
-```
+**Solution (Streamlit Cloud dashboard):** keep `packages.txt` empty.
+
+The dashboard (`src/web_dashboard.py`) does not import OpenCV directly, so no
+apt system packages are required for cloud deployment.
+
+If you later deploy OpenCV-dependent scripts in cloud runtime, add only the
+minimum required package and test the install on your target Debian version.
 
 ### Error: "Memory limit exceeded"
 
