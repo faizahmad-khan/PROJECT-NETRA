@@ -237,7 +237,7 @@ git push
 
 ### Error: "OpenCV error - libGL.so.1"
 
-**Solution (Streamlit Cloud dashboard):** keep `packages.txt` empty.
+**Solution (Streamlit Cloud dashboard):** remove `packages.txt`.
 
 The dashboard (`src/web_dashboard.py`) does not import OpenCV directly, so no
 apt system packages are required for cloud deployment.
