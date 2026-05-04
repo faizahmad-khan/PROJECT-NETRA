@@ -1,0 +1,94 @@
+# 🚦 PROJECT NETRA - Configuration File
+# Modify this file to customize deployment parameters
+
+# ==================== VIDEO INPUT ====================
+video:
+  input_path: "videos/traffic.mp4"
+  display_enabled: true
+
+# ==================== MODEL PATHS ====================
+models:
+  traffic_model: "models/yolov8m.pt"    # Generalist model for vehicle detection
+  ambulance_model: "models/best.pt"     # Specialist model for ambulance detection
+
+# ==================== RUNTIME OPTIMIZATION ====================
+runtime:
+  device: "auto"              # Options: "auto", "cpu", "mps", "cuda"
+  precision: "fp32"           # Options: "fp32", "fp16" (fp16 only on CUDA)
+  imgsz: 640                  # Inference image size
+  skip_frames: 0              # Skip N frames (0 = process every frame)
+
+# ==================== DETECTION THRESHOLDS ====================
+detection:
+  vehicle_confidence: 0.15    # Confidence threshold for vehicle detection
+  ambulance_confidence: 0.7   # Confidence threshold for ambulance detection
+  
+  # Vehicle classes to track
+  vehicle_classes:
+    - car
+    - truck
+    - bus
+    - motorbike
+    - bicycle
+
+# ==================== LANE CONFIGURATION ====================
+# Define ROI (Region of Interest) boxes for each lane
+# Format: [x_min, y_min, x_max, y_max]
+lanes:
+  lane1:
+    name: "Lane 1 (Left)"
+    roi: [50, 100, 350, 500]
+    color_bgr: [0, 0, 255]        # Red in BGR
+
+  lane2:
+    name: "Lane 2 (Right)"
+    roi: [400, 100, 700, 500]
+    color_bgr: [255, 0, 0]        # Blue in BGR
+
+# ==================== TRAFFIC SIGNAL TIMING ====================
+# Dynamic timer formula: base_time + (vehicle_count * multiplier)
+# Timer range: [min_time, max_time]
+signal_timing:
+  base_time: 5                # Base green light duration (seconds)
+  multiplier: 2               # Additional seconds per vehicle
+  min_time: 5                 # Minimum green light (seconds)
+  max_time: 60                # Maximum green light (seconds)
+
+# ==================== AMBULANCE DETECTION ====================
+ambulance:
+  enabled: true
+  # Geometric filters to reduce false positives
+  min_area: 3000              # Minimum bounding box area
+  max_aspect_ratio: 2.0       # Maximum width/height ratio
+
+# ==================== TRACKING ====================
+tracking:
+  frame_rate: 30              # Video FPS (auto-detected if not specified)
+  trail_length: 30            # Number of positions to store per track
+
+# ==================== DATA LOGGING ====================
+logging:
+  enabled: true
+  output_dir: "data/traffic_logs"
+  log_interval_seconds: 5     # Write to CSV every N seconds
+  
+  # Columns to log
+  columns:
+    - Timestamp
+    - Lane1_Count
+    - Lane2_Count
+    - Lane1_Unique
+    - Lane2_Unique
+    - Avg_Speed_L1
+    - Avg_Speed_L2
+    - Ambulance_Detected
+    - Green_Time_L1
+    - Green_Time_L2
+
+# ==================== LOGGER CONFIGURATION ====================
+logger:
+  level: "INFO"               # Options: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/netra.log"
+  file_enabled: true
+  console_enabled: true
