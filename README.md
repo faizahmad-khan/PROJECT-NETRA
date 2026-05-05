@@ -291,7 +291,231 @@ The system logs traffic patterns every 5 seconds. This data can be used to gener
 
 ---
 
-## 🔮 Future Scope
+## � Configuration Management
+
+NETRA now supports **YAML-based configuration** for easy deployment across different environments.
+
+### Quick Start with Config
+
+```bash
+# Use default configuration
+python main.py
+
+# Use custom configuration file
+python main.py --config config/my-deployment.yaml
+
+# Override specific settings via CLI
+python main.py --config config/default.yaml --device cuda --precision fp16 --imgsz 480
+```
+
+### Configuration File Structure
+
+Edit `config/default.yaml` to customize:
+
+```yaml
+# Video input source
+video:
+  input_path: "videos/traffic.mp4"
+  display_enabled: true
+
+# Detection thresholds
+detection:
+  vehicle_confidence: 0.15        # Lower = more detections
+  ambulance_confidence: 0.7       # Higher = fewer false positives
+  vehicle_classes:
+    - car
+    - truck
+    - bus
+
+# Lane definitions (ROI boxes)
+lanes:
+  lane1:
+    roi: [50, 100, 350, 500]      # [x_min, y_min, x_max, y_max]
+
+# Dynamic signal timing
+signal_timing:
+  base_time: 5                    # Base green duration (seconds)
+  multiplier: 2                   # Additional seconds per vehicle
+  max_time: 60                    # Maximum green duration
+
+# Data logging
+logging:
+  enabled: true
+  output_dir: "data/traffic_logs"
+  log_interval_seconds: 5
+```
+
+---
+
+## 🚨 Troubleshooting
+
+### Issue: "Model failed to load"
+**Solution:** 
+- Ensure model files exist: `ls models/yolov8m.pt models/best.pt`
+- Download if missing: `python -c "from ultralytics import YOLO; YOLO('yolov8m.pt')"`
+- Check PyTorch installation: `python -c "import torch; print(torch.__version__)"`
+
+### Issue: Low FPS / Slow Processing
+**Solution:**
+- Use lighter model: `--traffic-model models/yolov8n.pt`
+- Reduce image size: `--imgsz 416` (from 640)
+- Skip frames: `--skip-frames 2` (process every 3rd frame)
+- Check device: `--device cuda` (if GPU available)
+- Monitor CPU/GPU: Use `nvidia-smi` (GPU) or `top` (CPU)
+
+### Issue: Video Won't Open
+**Solution:**
+- Check file path: `ls -l videos/traffic.mp4`
+- Verify video format: `ffprobe videos/traffic.mp4`
+- Convert if needed: `ffmpeg -i video.mkv -c:v libx264 -preset medium traffic.mp4`
+- Use absolute path: `--video /absolute/path/to/video.mp4`
+
+### Issue: "No module named 'supervision'"
+**Solution:**
+```bash
+# Reinstall dependencies
+pip install --upgrade -r requirements.txt
+
+# Or specific package
+pip install supervision>=0.18.0
+```
+
+### Issue: CSV File Not Created
+**Solution:**
+- Check logging is enabled: `logging: enabled: true` in config
+- Verify write permissions: `ls -ld data/traffic_logs/`
+- Create directory if missing: `mkdir -p data/traffic_logs`
+- Check disk space: `df -h`
+
+### Issue: Incorrect Lane Counts
+**Solution:**
+- Verify ROI boxes in config: Draw boxes on sample frame to confirm
+- Adjust confidence thresholds: Lower `vehicle_confidence` for more detections
+- Use `src/utils/mouse_finder.py` to find correct ROI coordinates
+
+### Issue: MacBook/Apple Silicon Issues
+**Solution:**
+```bash
+# Use MPS device explicitly
+python main.py --device mps
+
+# Or fallback to CPU if unstable
+python main.py --device cpu
+```
+
+### Issue: "CUDA out of memory"
+**Solution:**
+- Reduce batch size (if applicable)
+- Use lighter model: `yolov8n.pt` instead of `yolov8m.pt`
+- Reduce image size: `--imgsz 416`
+- Skip frames: `--skip-frames 1`
+
+### Issue: Ambulance Not Detected
+**Solution:**
+- Lower confidence threshold: `ambulance_confidence: 0.5` (in config)
+- Verify model: `python src/utils/check_brain.py --model models/best.pt`
+- Check video has ambulances in it
+- Retrain if needed with proper labeled data
+
+---
+
+## ⚡ Performance Optimization Tips
+
+### For Real-Time Performance (30+ FPS)
+
+1. **Choose Right Model**
+   ```bash
+   # YOLOv8n (Nano) - Fastest, ~10M parameters
+   python main.py --traffic-model models/yolov8n.pt --imgsz 416
+   
+   # YOLOv8m (Medium) - Balanced, ~25M parameters  
+   python main.py --traffic-model models/yolov8m.pt --imgsz 640
+   ```
+
+2. **Use GPU Acceleration**
+   ```bash
+   # NVIDIA GPU (CUDA)
+   python main.py --device cuda --precision fp16 --imgsz 640
+   
+   # Apple Silicon (MPS)
+   python main.py --device mps --precision fp32 --imgsz 480
+   ```
+
+3. **Frame Skipping** (Process every Nth frame)
+   ```bash
+   # Process every 3rd frame (3x speedup, slight accuracy loss)
+   python main.py --skip-frames 2
+   ```
+
+4. **Reduce Input Resolution**
+   ```bash
+   # Smaller input = faster processing
+   python main.py --imgsz 480   # Default is 640
+   python main.py --imgsz 416   # For edge devices
+   ```
+
+### For Best Accuracy
+
+```bash
+# Use larger model + higher resolution
+python main.py --traffic-model models/yolov8m.pt --imgsz 640 --device cuda --precision fp16
+```
+
+### For Edge Devices (Jetson Nano, RPi, etc.)
+
+```bash
+# Export to optimized format
+python src/export_model.py --model models/yolov8n.pt --format tflite --imgsz 416
+
+# Or TensorRT for NVIDIA edge
+python src/export_model.py --model models/yolov8n.pt --format engine --half --device cuda:0 --imgsz 480
+```
+
+### Benchmark Your Setup
+
+Monitor performance with logging:
+```bash
+python main.py 2>&1 | grep -E "FPS|Time|Frames"
+```
+
+Check resource usage:
+```bash
+# Linux/Mac
+watch -n1 'nvidia-smi'           # GPU (NVIDIA)
+top -p $(pgrep -f "python main") # CPU
+
+# macOS specific
+vm_stat                           # Memory
+power_log                         # Power usage
+```
+
+---
+
+## 📋 Running Tests
+
+Unit tests verify tracker accuracy:
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run specific test
+python -m pytest tests/test_tracker.py::TestTrackerSpeedEstimation -v
+
+# Generate coverage report
+python -m pytest tests/ --cov=src --cov-report=html
+```
+
+Tests cover:
+- ✅ Speed estimation calculations
+- ✅ Lane assignment logic
+- ✅ Unique vehicle counting
+- ✅ Movement trail history
+- ✅ Error handling
+
+---
+
+## �🔮 Future Scope
 
 - **Traffic Flow Prediction**: LSTM / Prophet time-series model to predict congestion 15–30 minutes ahead using collected CSV data.
 - **License Plate Recognition (ANPR)**: Add OCR to detect number plates for red-light violation logging.
