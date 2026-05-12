@@ -3,12 +3,15 @@
 Analyzes traffic data from CSV logs and generates insights
 """
 
+from __future__ import annotations
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import glob
 import os
 from datetime import datetime
+from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 
 # Set style for better-looking plots
@@ -19,19 +22,23 @@ plt.rcParams['figure.figsize'] = (14, 8)
 class TrafficAnalytics:
     """Main analytics engine for NETRA traffic data"""
     
-    def __init__(self, data_folder="data/traffic_logs"):
+    def __init__(self, data_folder: str = "data/traffic_logs") -> None:
         """Initialize analytics engine
         
         Args:
             data_folder: Folder containing Traffic_Data_*.csv files
         """
-        self.data_folder = data_folder
-        self.data = None
-        self.stats = {}
+        self.data_folder: str = data_folder
+        self.data: Optional[pd.DataFrame] = None
+        self.stats: Dict[str, Any] = {}
         
-    def load_data(self):
-        """Load all CSV files and combine them"""
-        csv_files = glob.glob(os.path.join(self.data_folder, "Traffic_Data_*.csv"))
+    def load_data(self) -> bool:
+        """Load all CSV files and combine them
+        
+        Returns:
+            bool: True if data loaded successfully, False otherwise
+        """
+        csv_files: List[str] = glob.glob(os.path.join(self.data_folder, "Traffic_Data_*.csv"))
         
         if not csv_files:
             print("❌ No traffic data files found!")
@@ -39,13 +46,13 @@ class TrafficAnalytics:
         
         print(f"📂 Found {len(csv_files)} traffic data files")
         
-        dataframes = []
+        dataframes: List[pd.DataFrame] = []
         for file in csv_files:
             try:
-                df = pd.read_csv(file)
+                df: pd.DataFrame = pd.read_csv(file)
                 # Extract date from filename
-                filename = os.path.basename(file)
-                date_str = filename.replace("Traffic_Data_", "").replace(".csv", "")
+                filename: str = os.path.basename(file)
+                date_str: str = filename.replace("Traffic_Data_", "").replace(".csv", "")
                 df['Date'] = date_str[:8]  # YYYYMMDD
                 dataframes.append(df)
                 print(f"  ✅ Loaded: {filename}")
@@ -79,7 +86,7 @@ class TrafficAnalytics:
         print(f"\n✅ Total records loaded: {len(self.data)}")
         return True
     
-    def calculate_statistics(self):
+    def calculate_statistics(self) -> None:
         """Calculate comprehensive statistics"""
         if self.data is None or len(self.data) == 0:
             print("❌ No data available!")
@@ -90,14 +97,14 @@ class TrafficAnalytics:
         print("="*60)
         
         # Basic Statistics
-        self.stats['total_records'] = len(self.data)
-        self.stats['avg_lane1'] = self.data['Lane1_Count'].mean()
-        self.stats['avg_lane2'] = self.data['Lane2_Count'].mean()
-        self.stats['max_lane1'] = self.data['Lane1_Count'].max()
-        self.stats['max_lane2'] = self.data['Lane2_Count'].max()
-        self.stats['ambulance_count'] = self.data['Ambulance_Detected'].sum()
-        self.stats['avg_green_time_l1'] = self.data['Green_Time_L1'].mean()
-        self.stats['avg_green_time_l2'] = self.data['Green_Time_L2'].mean()
+        self.stats['total_records']: int = len(self.data)
+        self.stats['avg_lane1']: float = self.data['Lane1_Count'].mean()
+        self.stats['avg_lane2']: float = self.data['Lane2_Count'].mean()
+        self.stats['max_lane1']: int = self.data['Lane1_Count'].max()
+        self.stats['max_lane2']: int = self.data['Lane2_Count'].max()
+        self.stats['ambulance_count']: int = int(self.data['Ambulance_Detected'].sum())
+        self.stats['avg_green_time_l1']: float = self.data['Green_Time_L1'].mean()
+        self.stats['avg_green_time_l2']: float = self.data['Green_Time_L2'].mean()
         
         print(f"\n📈 OVERALL STATISTICS")
         print(f"  • Total Observations: {self.stats['total_records']}")
