@@ -13,7 +13,7 @@ import argparse
 import logging
 import sys
 import yaml
-from typing import cast, Optional
+from typing import Dict, List, Tuple, Optional, Any, cast
 from datetime import datetime
 from pathlib import Path
 
@@ -28,27 +28,34 @@ from src.model_runtime import (
 
 # ==================== SETUP LOGGING ====================
 
-def setup_logger(config: dict) -> logging.Logger:
-    """Initialize structured logging system."""
-    logger_config = config.get("logger", {})
-    log_level = getattr(logging, logger_config.get("level", "INFO"))
-    log_format = logger_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+def setup_logger(config: Dict[str, Any]) -> logging.Logger:
+    """Initialize structured logging system.
     
-    logger = logging.getLogger("NETRA")
+    Args:
+        config: Configuration dictionary with logger settings
+    
+    Returns:
+        logging.Logger: Configured logger instance
+    """
+    logger_config: Dict[str, Any] = config.get("logger", {})
+    log_level: int = getattr(logging, logger_config.get("level", "INFO"))
+    log_format: str = logger_config.get("format", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    
+    logger: logging.Logger = logging.getLogger("NETRA")
     logger.setLevel(log_level)
     
     # Console handler
     if logger_config.get("console_enabled", True):
-        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler: logging.StreamHandler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(log_level)
         console_handler.setFormatter(logging.Formatter(log_format))
         logger.addHandler(console_handler)
     
     # File handler
     if logger_config.get("file_enabled", True):
-        log_file = logger_config.get("file", "logs/netra.log")
+        log_file: str = logger_config.get("file", "logs/netra.log")
         Path(log_file).parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_file)
+        file_handler: logging.FileHandler = logging.FileHandler(log_file)
         file_handler.setLevel(log_level)
         file_handler.setFormatter(logging.Formatter(log_format))
         logger.addHandler(file_handler)
@@ -56,14 +63,21 @@ def setup_logger(config: dict) -> logging.Logger:
     return logger
 
 
-def load_config(config_path: str = "config/default.yaml") -> dict:
-    """Load configuration from YAML file."""
+def load_config(config_path: str = "config/default.yaml") -> Dict[str, Any]:
+    """Load configuration from YAML file.
+    
+    Args:
+        config_path: Path to YAML configuration file
+    
+    Returns:
+        Dict: Configuration dictionary or empty dict if loading fails
+    """
     try:
         if not Path(config_path).exists():
             raise FileNotFoundError(f"Config file not found: {config_path}")
         
         with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
+            config: Dict[str, Any] = yaml.safe_load(f)
         
         return config
     except Exception as e:
@@ -73,7 +87,11 @@ def load_config(config_path: str = "config/default.yaml") -> dict:
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments (can override config file)."""
+    """Parse command-line arguments (can override config file).
+    
+    Returns:
+        argparse.Namespace: Parsed command-line arguments
+    """
     parser = argparse.ArgumentParser(
         description="NETRA main runtime with edge optimization options."
     )
@@ -117,8 +135,16 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def merge_config_and_args(config: dict, args: argparse.Namespace) -> dict:
-    """Merge YAML config with command-line arguments (CLI takes precedence)."""
+def merge_config_and_args(config: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+    """Merge YAML config with command-line arguments (CLI takes precedence).
+    
+    Args:
+        config: Configuration dictionary from YAML
+        args: Parsed command-line arguments
+    
+    Returns:
+        Dict: Merged configuration
+    """
     if args.video:
         config.setdefault("video", {})["input_path"] = args.video
     
@@ -143,7 +169,8 @@ def merge_config_and_args(config: dict, args: argparse.Namespace) -> dict:
     return config
 
 
-def main():
+def main() -> None:
+    """Main application entry point with comprehensive error handling."""
     """Main application entry point with comprehensive error handling."""
     
     # Parse arguments and load configuration
