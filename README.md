@@ -136,13 +136,13 @@ Place your test video in the `videos/` folder and rename it to `traffic.mp4` (or
 Run the main application:
 
 ```bash
-python main.py
+python3 main.py
 ```
 
 ### Performance-Friendly Runtime (Recommended)
 
 ```bash
-python main.py --traffic-model models/yolov8n.pt --device auto --precision fp32 --imgsz 640 --skip-frames 1
+python3 main.py --traffic-model models/yolov8n.pt --device auto --precision fp32 --imgsz 640 --skip-frames 1
 ```
 
 Useful runtime flags:
@@ -157,25 +157,25 @@ Useful runtime flags:
 Export helper:
 
 ```bash
-python src/export_model.py --model models/yolov8n.pt --format onnx --imgsz 640
+python3 src/export_model.py --model models/yolov8n.pt --format onnx --imgsz 640
 ```
 
 MacBook M2 (Apple Silicon):
 
 ```bash
-python src/export_model.py --model models/yolov8n.pt --format coreml --imgsz 640
+python3 src/export_model.py --model models/yolov8n.pt --format coreml --imgsz 640
 ```
 
 Jetson / NVIDIA edge (TensorRT FP16):
 
 ```bash
-python src/export_model.py --model models/yolov8n.pt --format engine --half --device cuda:0 --imgsz 640
+python3 src/export_model.py --model models/yolov8n.pt --format engine --half --device cuda:0 --imgsz 640
 ```
 
 Jetson / NVIDIA edge (TensorRT INT8):
 
 ```bash
-python src/export_model.py --model models/yolov8n.pt --format engine --int8 --device cuda:0 --imgsz 640 --data coco8.yaml
+python3 src/export_model.py --model models/yolov8n.pt --format engine --int8 --device cuda:0 --imgsz 640 --data coco8.yaml
 ```
 
 Notes:
@@ -193,7 +193,7 @@ The system will automatically generate a CSV file (e.g., `Traffic_Data_20260131.
 Run the comprehensive traffic analytics dashboard to visualize and analyze your collected data:
 
 ```bash
-python src/analytics_report.py
+python3 src/analytics_report.py
 ```
 
 **The analytics module provides:**
@@ -299,13 +299,13 @@ NETRA now supports **YAML-based configuration** for easy deployment across diffe
 
 ```bash
 # Use default configuration
-python main.py
+python3 main.py
 
 # Use custom configuration file
-python main.py --config config/my-deployment.yaml
+python3 main.py --config config/my-deployment.yaml
 
 # Override specific settings via CLI
-python main.py --config config/default.yaml --device cuda --precision fp16 --imgsz 480
+python3 main.py --config config/default.yaml --device cuda --precision fp16 --imgsz 480
 ```
 
 ### Configuration File Structure
@@ -397,10 +397,10 @@ pip install supervision>=0.18.0
 **Solution:**
 ```bash
 # Use MPS device explicitly
-python main.py --device mps
+python3 main.py --device mps
 
 # Or fallback to CPU if unstable
-python main.py --device cpu
+python3 main.py --device cpu
 ```
 
 ### Issue: "CUDA out of memory"
@@ -426,56 +426,56 @@ python main.py --device cpu
 1. **Choose Right Model**
    ```bash
    # YOLOv8n (Nano) - Fastest, ~10M parameters
-   python main.py --traffic-model models/yolov8n.pt --imgsz 416
+   python3 main.py --traffic-model models/yolov8n.pt --imgsz 416
    
    # YOLOv8m (Medium) - Balanced, ~25M parameters  
-   python main.py --traffic-model models/yolov8m.pt --imgsz 640
+   python3 main.py --traffic-model models/yolov8m.pt --imgsz 640
    ```
 
 2. **Use GPU Acceleration**
    ```bash
    # NVIDIA GPU (CUDA)
-   python main.py --device cuda --precision fp16 --imgsz 640
+   python3 main.py --device cuda --precision fp16 --imgsz 640
    
    # Apple Silicon (MPS)
-   python main.py --device mps --precision fp32 --imgsz 480
+   python3 main.py --device mps --precision fp32 --imgsz 480
    ```
 
 3. **Frame Skipping** (Process every Nth frame)
    ```bash
    # Process every 3rd frame (3x speedup, slight accuracy loss)
-   python main.py --skip-frames 2
+   python3 main.py --skip-frames 2
    ```
 
 4. **Reduce Input Resolution**
    ```bash
    # Smaller input = faster processing
-   python main.py --imgsz 480   # Default is 640
-   python main.py --imgsz 416   # For edge devices
+   python3 main.py --imgsz 480   # Default is 640
+   python3 main.py --imgsz 416   # For edge devices
    ```
 
 ### For Best Accuracy
 
 ```bash
 # Use larger model + higher resolution
-python main.py --traffic-model models/yolov8m.pt --imgsz 640 --device cuda --precision fp16
+python3 main.py --traffic-model models/yolov8m.pt --imgsz 640 --device cuda --precision fp16
 ```
 
 ### For Edge Devices (Jetson Nano, RPi, etc.)
 
 ```bash
 # Export to optimized format
-python src/export_model.py --model models/yolov8n.pt --format tflite --imgsz 416
+python3 src/export_model.py --model models/yolov8n.pt --format tflite --imgsz 416
 
 # Or TensorRT for NVIDIA edge
-python src/export_model.py --model models/yolov8n.pt --format engine --half --device cuda:0 --imgsz 480
+python3 src/export_model.py --model models/yolov8n.pt --format engine --half --device cuda:0 --imgsz 480
 ```
 
 ### Benchmark Your Setup
 
 Monitor performance with logging:
 ```bash
-python main.py 2>&1 | grep -E "FPS|Time|Frames"
+python3 main.py 2>&1 | grep -E "FPS|Time|Frames"
 ```
 
 Check resource usage:
@@ -497,13 +497,13 @@ Unit tests verify tracker accuracy:
 
 ```bash
 # Run all tests
-python -m pytest tests/ -v
+python3 -m pytest tests/ -v
 
 # Run specific test
-python -m pytest tests/test_tracker.py::TestTrackerSpeedEstimation -v
+python3 -m pytest tests/test_tracker.py::TestTrackerSpeedEstimation -v
 
 # Generate coverage report
-python -m pytest tests/ --cov=src --cov-report=html
+python3 -m pytest tests/ --cov=src --cov-report=html
 ```
 
 Tests cover:
