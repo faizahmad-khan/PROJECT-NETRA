@@ -76,13 +76,13 @@ def load_config(config_path: str = "config/default.yaml") -> Dict[str, Any]:
         if not Path(config_path).exists():
             raise FileNotFoundError(f"Config file not found: {config_path}")
         
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config: Dict[str, Any] = yaml.safe_load(f)
         
         return config
     except Exception as e:
         print(f"❌ Error loading config: {e}")
-        print(f"   Using command-line arguments instead.")
+        print("   Using command-line arguments instead.")
         return {}
 
 
@@ -170,7 +170,6 @@ def merge_config_and_args(config: Dict[str, Any], args: argparse.Namespace) -> D
 
 
 def main() -> None:
-    """Main application entry point with comprehensive error handling."""
     """Main application entry point with comprehensive error handling."""
     
     # Parse arguments and load configuration
