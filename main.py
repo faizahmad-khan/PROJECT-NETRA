@@ -13,7 +13,7 @@ import argparse
 import logging
 import sys
 import yaml
-from typing import Dict, List, Tuple, Optional, Any, cast
+from typing import Dict, Any, cast
 from datetime import datetime
 from pathlib import Path
 
@@ -30,10 +30,10 @@ from src.model_runtime import (
 
 def setup_logger(config: Dict[str, Any]) -> logging.Logger:
     """Initialize structured logging system.
-    
+
     Args:
         config: Configuration dictionary with logger settings
-    
+
     Returns:
         logging.Logger: Configured logger instance
     """
@@ -80,7 +80,7 @@ def load_config(config_path: str = "config/default.yaml") -> Dict[str, Any]:
             config: Dict[str, Any] = yaml.safe_load(f)
         
         return config
-    except Exception as e:
+    except (OSError, yaml.YAMLError, ValueError) as e:
         print(f"❌ Error loading config: {e}")
         print("   Using command-line arguments instead.")
         return {}
@@ -180,13 +180,13 @@ def main() -> None:
     # Setup logging
     logger = setup_logger(config)
     logger.info("🚦 PROJECT NETRA - Starting...")
-    logger.info(f"Configuration file: {args.config}")
+    logger.info("Configuration file: %s", args.config)
     
     try:
         # ==================== SETUP VIDEO & MODELS ====================
         
         video_path = config.get("video", {}).get("input_path", "videos/traffic.mp4")
-        logger.info(f"Opening video: {video_path}")
+        logger.info("Opening video: %s", video_path)
         
         try:
             cap = cv2.VideoCapture(video_path)
@@ -198,9 +198,9 @@ def main() -> None:
             frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             
-            logger.info(f"✅ Video loaded: {frame_width}x{frame_height} @ {fps} FPS ({total_frames} frames)")
-        except Exception as e:
-            logger.error(f"❌ Video loading failed: {e}")
+            logger.info("✅ Video loaded: %sx%s @ %s FPS (%s frames)", frame_width, frame_height, fps, total_frames)
+        except (OSError, ValueError, RuntimeError) as e:
+            logger.error("❌ Video loading failed: %s", e)
             raise
         
         # Resolve device and precision
@@ -217,7 +217,7 @@ def main() -> None:
         )
         
         predict_kwargs = build_predict_kwargs(runtime_config)
-        logger.info(f"Runtime: {format_runtime_summary(runtime_config)}")
+        logger.info("Runtime: %s", format_runtime_summary(runtime_config))
         
         # Load models
         model_paths = config.get("models", {})
@@ -229,8 +229,8 @@ def main() -> None:
             model_traffic = YOLO(traffic_model_path)
             model_ambulance = YOLO(ambulance_model_path)
             logger.info("✅ Models loaded successfully")
-        except Exception as e:
-            logger.error(f"❌ Model loading failed: {e}")
+        except (OSError, RuntimeError, ValueError) as e:
+            logger.error("❌ Model loading failed: %s", e)
             raise
         
         # ==================== SETUP VEHICLE TRACKER ====================
@@ -250,7 +250,7 @@ def main() -> None:
             cid for cid, name in model_traffic.names.items()
             if name.lower() in [v.lower() for v in vehicle_classes]
         ]
-        logger.info(f"🔍 ByteTrack enabled @ {frame_rate} FPS | Tracking: {vehicle_classes}")
+        logger.info("🔍 ByteTrack enabled @ %s FPS | Tracking: %s", frame_rate, vehicle_classes)
         
         # ==================== SETUP DATA LOGGING ====================
         
@@ -272,9 +272,9 @@ def main() -> None:
                         "Avg_Speed_L1", "Avg_Speed_L2",
                         "Ambulance_Detected", "Green_Time_L1", "Green_Time_L2"
                     ]))
-                logger.info(f"✅ Logging enabled: {file_name}")
-            except Exception as e:
-                logger.error(f"❌ Failed to create log file: {e}")
+                logger.info("✅ Logging enabled: %s", file_name)
+            except OSError as e:
+                logger.error("❌ Failed to create log file: %s", e)
                 log_cfg["enabled"] = False
         else:
             file_name = None
@@ -286,15 +286,14 @@ def main() -> None:
         lane1_limits = lanes_cfg.get("lane1", {}).get("roi", [50, 100, 350, 500])
         lane2_limits = lanes_cfg.get("lane2", {}).get("roi", [400, 100, 700, 500])
         
-        logger.info(f"Lane 1 ROI: {lane1_limits}")
-        logger.info(f"Lane 2 ROI: {lane2_limits}")
+        logger.info("Lane 1 ROI: %s", lane1_limits)
+        logger.info("Lane 2 ROI: %s", lane2_limits)
         
         # ==================== SIGNAL TIMING CONFIGURATION ====================
         
         signal_cfg = config.get("signal_timing", {})
         base_time = signal_cfg.get("base_time", 5)
         multiplier = signal_cfg.get("multiplier", 2)
-        min_time = signal_cfg.get("min_time", 5)
         max_time = signal_cfg.get("max_time", 60)
         
         # ==================== AMBULANCE CONFIGURATION ====================
@@ -339,7 +338,7 @@ def main() -> None:
                     detections = cast(sv.Detections, sv.Detections.from_ultralytics(results[0]))
                     
                     if detections.class_id is None or detections.confidence is None:
-                        tracked = sv.Detections()
+                        tracked = cast(sv.Detections, sv.Detections.empty())
                     else:
                         # Filter vehicles
                         mask = (np.isin(detections.class_id, vehicle_class_ids)
@@ -348,14 +347,14 @@ def main() -> None:
                         
                         # Track across frames
                         tracked = tracker.update(detections)
-                except Exception as e:
-                    logger.warning(f"⚠️ Traffic detection error: {e}")
-                    tracked = sv.Detections()
+                except (TypeError, ValueError, RuntimeError) as e:
+                    logger.warning("⚠️ Traffic detection error: %s", e)
+                    tracked = cast(sv.Detections, sv.Detections.empty())
                 
                 try:
                     info = tracker.process(tracked, lane1_limits, lane2_limits)
-                except Exception as e:
-                    logger.warning(f"⚠️ Tracking error: {e}")
+                except (KeyError, TypeError, ValueError, RuntimeError) as e:
+                    logger.warning("⚠️ Tracking error: %s", e)
                     info = {
                         "lane1_count": 0, "lane2_count": 0,
                         "lane1_speeds": [], "lane2_speeds": [], "tracks": []
@@ -393,8 +392,8 @@ def main() -> None:
                         for j in range(1, len(trail)):
                             thickness = max(1, int(2 * j / len(trail)))
                             cv2.line(img, trail[j - 1], trail[j], color, thickness)
-                except Exception as e:
-                    logger.warning(f"⚠️ Drawing error: {e}")
+                except (TypeError, ValueError) as e:
+                    logger.warning("⚠️ Drawing error: %s", e)
                 
                 # ===== AMBULANCE DETECTION =====
                 if ambulance_enabled:
@@ -416,8 +415,8 @@ def main() -> None:
                                     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 4)
                                     cv2.putText(img, "AMBULANCE", (x1, y1 - 10),
                                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                    except Exception as e:
-                        logger.warning(f"⚠️ Ambulance detection error: {e}")
+                    except (TypeError, ValueError, RuntimeError) as e:
+                        logger.warning("⚠️ Ambulance detection error: %s", e)
                 
                 # ===== CALCULATE TIMERS =====
                 t1 = min(base_time + (count_lane1 * multiplier), max_time)
@@ -425,7 +424,7 @@ def main() -> None:
                 
                 # ===== DISPLAY LOGIC =====
                 try:
-                    h_img, w_img = img.shape[:2]
+                    _, w_img = img.shape[:2]
                     
                     cv2.rectangle(img, (lane1_limits[0], lane1_limits[1]),
                                   (lane1_limits[2], lane1_limits[3]), (0, 0, 255), 2)
@@ -449,8 +448,8 @@ def main() -> None:
                         cv2.putText(img,
                                     f'TRACKER: {tracker.active_tracks()} active tracks | ByteTrack',
                                     (20, 105), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 1)
-                except Exception as e:
-                    logger.warning(f"⚠️ Display error: {e}")
+                except (ValueError, TypeError) as e:
+                    logger.warning("⚠️ Display error: %s", e)
                 
                 # ===== DATA LOGGING =====
                 if log_cfg.get("enabled", False) and file_name:
@@ -468,11 +467,18 @@ def main() -> None:
                                     int(ambulance_detected), int(t1), int(t2)
                                 ])
                             
-                            logger.info(f"Logged: {timestamp} | L1: {count_lane1} (uniq:{uniq_l1}) | "
-                                      f"L2: {count_lane2} (uniq:{uniq_l2}) | Tracks: {tracker.active_tracks()}")
+                            logger.info(
+                                "Logged: %s | L1: %s (uniq:%s) | L2: %s (uniq:%s) | Tracks: %s",
+                                timestamp,
+                                count_lane1,
+                                uniq_l1,
+                                count_lane2,
+                                uniq_l2,
+                                tracker.active_tracks(),
+                            )
                             last_log_time = current_time
-                    except Exception as e:
-                        logger.error(f"❌ Logging error: {e}")
+                    except OSError as e:
+                        logger.error("❌ Logging error: %s", e)
                 
                 # ===== DISPLAY VIDEO =====
                 if display_enabled:
@@ -482,15 +488,15 @@ def main() -> None:
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             logger.info("🛑 User requested exit (q key)")
                             break
-                    except Exception as e:
-                        logger.warning(f"⚠️ Display error: {e}")
+                    except (ValueError, TypeError) as e:
+                        logger.warning("⚠️ Display error: %s", e)
                         display_enabled = False
             
             except KeyboardInterrupt:
                 logger.info("🛑 Interrupted by user (Ctrl+C)")
                 break
-            except Exception as e:
-                logger.error(f"❌ Frame processing error: {e}", exc_info=True)
+            except (KeyError, TypeError, ValueError, RuntimeError) as e:
+                logger.error("❌ Frame processing error: %s", e, exc_info=True)
                 continue
         
         # ==================== CLEANUP ====================
@@ -500,18 +506,18 @@ def main() -> None:
         cv2.destroyAllWindows()
         
         uniq_l1, uniq_l2 = tracker.get_unique_counts()
-        logger.info(f"\n{'='*50}")
+        logger.info("\n%s", "=" * 50)
         logger.info("📊 SESSION SUMMARY")
-        logger.info(f"{'='*50}")
-        logger.info(f"Unique Vehicles — Lane 1: {uniq_l1}  |  Lane 2: {uniq_l2}")
-        logger.info(f"Total Unique: {uniq_l1 + uniq_l2}")
+        logger.info("%s", "=" * 50)
+        logger.info("Unique Vehicles — Lane 1: %s  |  Lane 2: %s", uniq_l1, uniq_l2)
+        logger.info("Total Unique: %s", uniq_l1 + uniq_l2)
         if log_cfg.get("enabled", False):
-            logger.info(f"Data saved to: {file_name}")
-        logger.info(f"{'='*50}")
+            logger.info("Data saved to: %s", file_name)
+        logger.info("%s", "=" * 50)
         logger.info("✅ NETRA shutdown complete")
     
-    except Exception as e:
-        logger.critical(f"❌ Critical error: {e}", exc_info=True)
+    except (OSError, RuntimeError, ValueError, TypeError, KeyError) as e:
+        logger.critical("❌ Critical error: %s", e, exc_info=True)
         sys.exit(1)
 
 
