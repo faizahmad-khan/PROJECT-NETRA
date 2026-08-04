@@ -1,6 +1,7 @@
 """
 🚦 PROJECT NETRA - Vehicle Tracking Module
-ByteTrack multi-object tracking for persistent vehicle identification across frames.
+ByteTrack multi-object tracking for persistent vehicle identification across
+frames.
 
 Features:
   - Unique vehicle counting per lane (eliminates double-counting)
@@ -16,6 +17,19 @@ import numpy as np
 from collections import defaultdict
 from typing import Dict, List, Tuple, Set, Optional, Any
 import time
+
+
+class TrailHistory(list):
+    """List-like history that keeps only the most recent positions."""
+
+    def __init__(self, max_length: int) -> None:
+        super().__init__()
+        self.max_length = max_length
+
+    def append(self, item: Tuple[float, float, float]) -> None:
+        super().append(item)
+        if len(self) > self.max_length:
+            del self[:-self.max_length]
 
 
 class VehicleTracker:
@@ -46,8 +60,10 @@ class VehicleTracker:
         )
 
         # Per-track state
-        self.positions: Dict[int, List[Tuple[float, float, float]]] = defaultdict(list)  # track_id -> [(cx, cy, t), ...]
-        self.speeds: Dict[int, float] = {}                    # track_id -> px/s
+        self.positions: Dict[int, TrailHistory] = defaultdict(
+            lambda: TrailHistory(self.trail_length)
+        )  # track_id -> [(cx, cy, t), ...]
+        self.speeds: Dict[int, float] = {}
 
         # Cumulative unique IDs per lane (session-level)
         self.unique_ids: Dict[str, Set[int]] = {"lane1": set(), "lane2": set()}
@@ -101,8 +117,6 @@ class VehicleTracker:
 
             # Store position history
             self.positions[tid].append((cx, cy, now))
-            if len(self.positions[tid]) > self.trail_length:
-                self.positions[tid] = self.positions[tid][-self.trail_length:]
 
             # Speed estimation
             speed: float = self._estimate_speed(tid)
